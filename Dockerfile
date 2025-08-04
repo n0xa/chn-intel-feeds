@@ -1,5 +1,10 @@
 FROM ubuntu:24.04
 
+# Use Python 3.11 for cifsdk compatibility (avoids SafeConfigParser issue)
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get clean
+
 LABEL maintainer="n0xa"
 LABEL name="chn-intel-feeds"
 LABEL version="2.1.0"
@@ -14,18 +19,20 @@ ENV DEBIAN_FRONTEND "noninteractive"
 # hadolint ignore=DL3008,DL3005
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y python3 python3-pip python3-venv runit build-essential python3-dev\
+    && apt-get install --no-install-recommends -y python3.11 python3.11-pip python3.11-venv python3.11-dev runit build-essential git\
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
-RUN python3 -m venv /opt/venv
+RUN python3.11 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt /opt/requirements.txt
 # hadolint ignore=DL3013
 RUN pip install --upgrade pip setuptools wheel \
   && pip install -r /opt/requirements.txt \
+  && pip install twisted validators \
+  && pip install 'cifsdk>=3.0.0,<4.0' \
   && pip install git+https://github.com/n0xa/hpfeeds3.git
 
 COPY . /opt/
