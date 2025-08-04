@@ -1,27 +1,41 @@
-FROM ubuntu:18.04
+FROM ubuntu:24.04
 
-LABEL maintainer="Team Stingar <team-stingar@duke.edu>"
+# Use Python 3.11 for cifsdk compatibility (avoids SafeConfigParser issue)
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get clean
+
+LABEL maintainer="n0xa"
 LABEL name="chn-intel-feeds"
-LABEL version="1.9.1"
+LABEL version="2.1.0"
 LABEL release="1"
 LABEL summary="Community Honey Network intel feeds server"
 LABEL description="Small App for reading from a CIF instance and generating static feeds consumable via HTTP requests"
-LABEL authoritative-source-url="https://github.com/CommunityHoneyNetwork/chn-intel-feeds"
-LABEL changelog-url="https://github.com/CommunityHoneyNetwork/hpfeeds-logger/commits/master"
+LABEL authoritative-source-url="https://github.com/n0xa/chn-intel-feeds"
+LABEL changelog-url="https://github.com/n0xa/chn-intel-feeds/commits/master"
 
 ENV DEBIAN_FRONTEND "noninteractive"
 
 # hadolint ignore=DL3008,DL3005
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y python3 python3-pip runit build-essential python3-dev python3-distutils\
+    && apt-get install --no-install-recommends -y python3.11 python3.11-pip python3.11-venv python3.11-dev runit build-essential git\
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . /opt/
+# Create virtual environment
+RUN python3.11 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt /opt/requirements.txt
 # hadolint ignore=DL3013
-RUN python3 -m pip install --upgrade pip setuptools wheel \
-  && python3 -m pip install -r /opt/requirements.txt
+RUN pip install --upgrade pip setuptools wheel \
+  && pip install -r /opt/requirements.txt \
+  && pip install twisted validators \
+  && pip install 'cifsdk>=3.0.0,<4.0' \
+  && pip install git+https://github.com/n0xa/hpfeeds3.git
+
+COPY . /opt/
 
 RUN mkdir /etc/service/chn-intel-feeds && chmod 0755 /etc/service/chn-intel-feeds
 COPY chn-intel-feeds.run /etc/service/chn-intel-feeds/run
