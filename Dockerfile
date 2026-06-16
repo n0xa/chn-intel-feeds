@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND "noninteractive"
 # hadolint ignore=DL3008,DL3005
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y python3.11 python3.11-pip python3.11-venv python3.11-dev runit build-essential git\
+    && apt-get install --no-install-recommends -y python3.11 python3.11-venv python3.11-dev runit build-essential git\
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,8 +31,8 @@ COPY requirements.txt /opt/requirements.txt
 # hadolint ignore=DL3013
 RUN pip install --upgrade pip setuptools wheel \
   && pip install -r /opt/requirements.txt \
-  && pip install twisted validators \
-  && pip install 'cifsdk>=3.0.0,<4.0' \
+  && pip install twisted==26.4.0 validators==0.35.0 \
+  && pip install 'cifsdk==3.0.8' \
   && pip install git+https://github.com/n0xa/hpfeeds3.git
 
 COPY . /opt/
