@@ -53,4 +53,16 @@ RUN mkdir /etc/service/chn-api-feeds && chmod 0755 /etc/service/chn-api-feeds
 COPY chn-api-feeds.run /etc/service/chn-api-feeds/run
 RUN chmod 0755 /etc/service/chn-api-feeds/run
 
+# Drop root: none of the four services need privileged access. They
+# only write generated feeds/safelists under /var/www and read/run
+# from /opt and /etc/service (runsvdir needs write access there to
+# create its per-service supervise directories at runtime), and the
+# web server binds an unprivileged port (9000).
+# /etc/service is a symlink chain (-> runsvdir/current -> .../default),
+# so chown the resolved real directory, not the symlink itself.
+RUN mkdir -p /var/www/feeds /var/www/safelists \
+  && groupadd -r chn-intel-feeds && useradd -r -g chn-intel-feeds chn-intel-feeds \
+  && chown -R chn-intel-feeds:chn-intel-feeds /opt /var/www "$(readlink -f /etc/service)"
+USER chn-intel-feeds
+
 ENTRYPOINT ["/usr/bin/runsvdir", "-P", "/etc/service"]
